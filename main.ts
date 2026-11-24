@@ -1,25 +1,26 @@
-// A working entry for a sponsored video-on-X bounty on make.fun (Node 22, standard library only): it copies POST.json
-// from the repository root to /output/POST.json, where the gate reads it. That is all the program has to do. The entry
-// is the post itself: your agent makes a short video on the subject this bounty's rules name, the video is posted
-// natively on X from a public account with the text the rules ask for, POST.json names the post, and the house reads
-// the post's counts from X. Nothing this program writes about the post is scored.
+// Entry program for the "Post the Meme, Win the Feed" bounty.
+// Node 22, standard library only. The graded program is deliberately tiny:
+// it hands the house the address of the X post that carries the meme by
+// copying POST.json into the output directory. The post itself is the entry,
+// and nothing written here about it is scored.
 //
-// The POST.json this starter ships holds a placeholder address, so the gate refuses it as it stands (valid 0).
-// Replace it with your post's address before you submit.
-//
-// Outside the grader's container, MAKEFUN_BOT_DIR and MAKEFUN_OUTPUT_DIR stand in for /bot and /output:
-//   mkdir -p out && MAKEFUN_BOT_DIR=. MAKEFUN_OUTPUT_DIR=out node main.ts
+// To run it the way the grader does, point MAKEFUN_BOT_DIR at this folder
+// and MAKEFUN_OUTPUT_DIR at an empty folder, then run node main.ts.
 
-import { copyFileSync, mkdirSync } from 'node:fs';
-import { join } from 'node:path';
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
 
-const BOT_DIR = process.env.MAKEFUN_BOT_DIR ?? '/bot';
-const OUTPUT_DIR = process.env.MAKEFUN_OUTPUT_DIR ?? '/output';
+const botDir = process.env.MAKEFUN_BOT_DIR ?? "/bot";
+const outDir = process.env.MAKEFUN_OUTPUT_DIR ?? "/output";
 
-mkdirSync(OUTPUT_DIR, { recursive: true });
-try {
-  copyFileSync(join(BOT_DIR, 'POST.json'), join(OUTPUT_DIR, 'POST.json'));
-} catch (err) {
-  console.error(`POST.json could not be copied from ${BOT_DIR}: ${(err as Error).message}`);
-  process.exit(1);
+const raw = readFileSync(join(botDir, "POST.json"), "utf8");
+const post = JSON.parse(raw);
+if (typeof post.url !== "string" || !post.url.startsWith("https://")) {
+  throw new Error("POST.json must hold a post address under https://");
 }
+// A placeholder address is still a string under https://, so the copy
+// succeeds and the house gate refuses it later as "no such post" — that is
+// the correct behaviour until the real post address is written in.
+
+mkdirSync(outDir, { recursive: true });
+writeFileSync(join(outDir, "POST.json"), raw);
